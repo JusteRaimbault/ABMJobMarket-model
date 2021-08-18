@@ -18,8 +18,8 @@ case class Worker(
 
   def discreteChoiceCoefs: Seq[Double] = Array.fill(7)(1.0)
 
-  def newJobChoice(potentialJobs: Seq[Job]): Worker = {
-
+  def newJobChoice(potentialJobs: Seq[Job])(implicit rng: Random): Worker = {
+    this.copy(currentJob = potentialJobs(rng.nextInt(potentialJobs.size)))
   }
 
 }
