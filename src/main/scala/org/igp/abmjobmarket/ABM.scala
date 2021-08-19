@@ -4,17 +4,19 @@ import scala.util.Random
 
 object ABM {
 
-  val workerFileName = "worker_DCE.csv"
+  val workerFileName: String = "worker_DCE.csv"
+  val jobFileName: String = "jobs.csv"
 
-
-  def setup(workersNum: Int)(implicit rng: Random, runtimeParameters: RuntimeParameters): ModelState = {
+  def setup(workersNum: Int, jobsNum: Int)(implicit rng: Random, runtimeParameters: RuntimeParameters): ModelState = {
 
     val workers  = Worker.syntheticWorkerPopulationDataSample(runtimeParameters.dataDirectory+workerFileName, workersNum)
+
+    val jobs = Job.syntheticJobsWeightedDataSample(runtimeParameters.dataDirectory+jobFileName, jobsNum)
 
     ModelState(
       workers = workers,
       employers = Seq.empty,
-      jobs = Seq.empty
+      jobs = jobs
     )
 
   }
@@ -25,7 +27,7 @@ object ABM {
     import parameters._
     implicit val rng: Random = new Random(seed)
 
-    val initialState = setup(workersNumber)
+    val initialState = setup(workersNumber, jobsNumber)
     ModelResult(
       Iterator.iterate(initialState)(modelStep).take(iterations + 1).toSeq
     )
