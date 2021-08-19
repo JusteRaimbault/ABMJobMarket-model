@@ -2,26 +2,15 @@ package org.igp.abmjobmarket
 
 import scala.util.Random
 
-object RunABM {
+object RunABM extends App {
 
-  val workerFilePath = ""
+  // global runtime parameters - no default value as system/path dependent
+  implicit val runtimeParameters: RuntimeParameters = RuntimeParameters(
+    dataDirectory = System.getenv("CS_HOME")+"/Misc/BiblioDocs-tmp/UrbanDynamics/ABMJobs/STATA_20210818/DATA/Cleaning/"
+  )
 
-  def setup(workersNum: Int)(implicit rng: Random): ModelState = {
+  val result = ABM.runModel()
 
-    val workers  = Worker.syntheticWorkerPopulationDataSample(workerFilePath, workersNum)
-
-    ModelState(
-      workers = workers,
-      employers = Seq.empty,
-      jobs = Seq.empty
-    )
-
-  }
-
-  def modelStep(state: ModelState): ModelState = state
-
-  def runModel(): Unit = {
-
-  }
+  println(result)
 
 }

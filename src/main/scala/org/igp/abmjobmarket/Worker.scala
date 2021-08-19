@@ -60,7 +60,7 @@ object Worker {
 
   /**
    * Sample the raw data for a basic synthetic population
-   *  Note: if sample size >> data size, not optimal approach (but random individual are generated though)
+   *    Note: if sample size >> data size, not optimal approach (but random individuals are sampled though)
    * @param file data file
    * @param size population size
    * @param rng rng
