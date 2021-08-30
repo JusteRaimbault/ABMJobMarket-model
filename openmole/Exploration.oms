@@ -31,12 +31,12 @@ val model = ScalaTask("""
 
 //model hook ToStringHook()
 
-val purpose = "EXPLORATION"
+val purpose = "EXPLORATION_REPLICATIONS"
 
 val resfilename = ((new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")).format(new java.util.Date()))+"_"+purpose+".csv"
 val indics_hook = CSVHook(workDirectory / "exploration" / resfilename,arrayOnRow=true)
 
-val env = LocalEnvironment(4)
+val env = LocalEnvironment(10)
 
 val exploration = DirectSampling(
     evaluation = (model on env hook indics_hook),
@@ -44,10 +44,10 @@ val exploration = DirectSampling(
       ((workersNumber is 100)
       x (jobsNumber in Seq(200,400))
       x (unemploymentShare in Seq(0.25, 0.75))
-      x (perceivedInformalityCoef in Seq(-1.0,-0.5,0.0,0.5,1.0))
+      x (perceivedInformalityCoef in Seq(-1.0,0.0,1.0))
       x (jobSeekingNumber in Seq(10,20))
       )
-     withIndex id ) x (replication in UniformDistribution[Long]() take 1)
+     withIndex id ) x (replication in UniformDistribution[Long]() take 100)
 )
 
 
