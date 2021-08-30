@@ -29,7 +29,10 @@ object Utils {
   }
 
   implicit class ArrayDecorator(a: Array[Double]) {
-    def dot(b: Array[Double]): Double = a.zip(b).map{case (aa,bb) => aa*bb}.sum
+    def dot(b: Array[Double]): Double = {
+      if (a.length!=b.length) throw new IllegalArgumentException("Dot product with vectors of different dimensions : "+a.toSeq+" . "+b.toSeq)
+      a.zip(b).map{case (aa,bb) => aa*bb}.sum
+    }
     def norm: Double = math.sqrt(a.map(aa => aa*aa).sum)
   }
 

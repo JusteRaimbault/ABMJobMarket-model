@@ -16,16 +16,18 @@ package object abmjobmarket {
    * @param seed random seed
    */
   case class ModelParameters(
-                              workersNumber: Int,
-                              jobsNumber: Int,
-                              unemploymentShare: Double,
-                              workPermitShare: Double,
-                              discreteChoiceParams: Array[Double],
-                              jobSeekingNumber: Int,
-                              iterations: Int,
-                              seed: Long
+                              workersNumber: Int = 100,
+                              jobsNumber: Int = 200,
+                              unemploymentShare: Double = 0.25,
+                              workPermitShare: Double = 0.5,
+                              discreteChoiceParams: Array[Double] = Array.fill(7)(1.0),
+                              perceivedInformalityCoef: Double = 1.0,
+                              jobSeekingNumber: Int = 20,
+                              iterations: Int = 1000,
+                              seed: Long = 0L
                             )
 
+  /*
   val defaultParameters: ModelParameters = ModelParameters(
     seed = 0L,
     iterations = 1000,
@@ -33,9 +35,9 @@ package object abmjobmarket {
     jobsNumber = 1000,
     unemploymentShare = 0.25,
     workPermitShare = 0.5,
-    discreteChoiceParams = Array.fill(7)(1.0),
+    discreteChoiceParams = Array.fill(8)(1.0),
     jobSeekingNumber = 15
-  )
+  )*/
 
   case class RuntimeParameters(
                               dataDirectory: String

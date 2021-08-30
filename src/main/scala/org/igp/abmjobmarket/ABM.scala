@@ -78,6 +78,6 @@ object ABM {
    * @param runtimeParameters implicit runtime parameters
    * @return
    */
-  def runModel()(implicit runtimeParameters: RuntimeParameters): ModelResult = runModel(defaultParameters)
-
+  def runModel()(implicit runtimeParameters: RuntimeParameters): ModelResult = //runModel(defaultParameters)
+    runModel(ModelParameters())
 }

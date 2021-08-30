@@ -51,6 +51,8 @@ case class Worker(
   /**
    * Choice with discrete choice utility
    *  ! perceived informality must depend on each job, otherwise just add a vanishing contsant in the DC proba
+   *  ! work permit is not taken into account
+   *
    *
    * @param jobs jobs
    * @param rng rng
