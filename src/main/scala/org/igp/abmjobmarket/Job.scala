@@ -1,5 +1,7 @@
 package org.igp.abmjobmarket
 
+import org.igp.abmjobmarket.Utils.ArrayDecorator
+
 import scala.util.Random
 
 case class Job(
@@ -69,6 +71,37 @@ object Job {
     val jobPool: Seq[Seq[String]] = rawData.zip(weights).flatMap{case (r,w) => Seq.fill((100*w).toInt)(r)}
     (1 to size).map(_ => Job(jobPool(rng.nextInt(jobPool.length))))
   }
+
+
+  /**
+   * Compute mean field perceived informality for each job, given a distance matrix between jobs (not recomputed at each step when jobs are fixed)
+   * @param state model state
+   * @return
+   */
+  def perceivedInformalities(state: ModelState): Seq[Double] = {
+    val informalities = state.jobs.map(_.contract).toArray
+    state.jobSimilarities.map{weights =>
+      weights.dot(informalities) / weights.sum
+    }
+  }
+
+  /**
+   * compute cosine similarity matrix between jobs (brute force: O(|jobs|*|jobs|))
+   * @param jobs jobs
+   * @return
+   */
+  def similarities(jobs: Seq[Job]): Array[Array[Double]] = {
+    jobs.toArray.map { j1 =>
+      val n1 = j1.discreteChoiceVariables.norm
+      jobs.toArray.map { j2 =>
+        val n2 = j2.discreteChoiceVariables.norm
+        if (n1==0.0&&n2==0.0) 1.0 else {
+          if (n1==0.0 || n2==0.0) 0.0 else j1.discreteChoiceVariables.dot(j2.discreteChoiceVariables) / (n1*n2)
+        }
+      }
+    }
+  }
+
 
 
 }

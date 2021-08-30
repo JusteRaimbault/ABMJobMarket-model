@@ -30,6 +30,7 @@ object Utils {
 
   implicit class ArrayDecorator(a: Array[Double]) {
     def dot(b: Array[Double]): Double = a.zip(b).map{case (aa,bb) => aa*bb}.sum
+    def norm: Double = math.sqrt(a.map(aa => aa*aa).sum)
   }
 
   def randomDrawProbas[A](a: IterableOnce[A], p: IterableOnce[Double])(implicit rng: Random): A = {

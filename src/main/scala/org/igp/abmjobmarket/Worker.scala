@@ -50,12 +50,14 @@ case class Worker(
 
   /**
    * Choice with discrete choice utility
+   *  ! perceived informality must depend on each job, otherwise just add a vanishing contsant in the DC proba
+   *
    * @param jobs jobs
    * @param rng rng
    * @return
    */
-  def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformality: Double)(implicit rng: Random): Worker = {
-    val utilitiesexp = jobs.map(j => math.exp((j.discreteChoiceVariables++Array(perceivedInformality)).dot(discreteChoiceCoefs)))
+  def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Worker = {
+    val utilitiesexp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality)).dot(discreteChoiceCoefs))}
     val s = utilitiesexp.sum
     val probas = utilitiesexp.map(_ / s)
     val chosenJob = Utils.randomDrawProbas(jobs, probas)
@@ -149,17 +151,17 @@ object Worker {
    * @param workers workers
    * @param jobSeekingNumber max number of job seeking workers per time step
    * @param jobs job pool
-   * @param perceivedInformality perceived informality
+   * @param perceivedInformalities perceived informality
    * @param rng rng
    * @return
    */
-  def newJobsChoice(workers: Seq[Worker], jobSeekingNumber: Int, jobs: Seq[Job], perceivedInformality: Double)(implicit rng: Random): Seq[Worker] = {
+  def newJobsChoice(workers: Seq[Worker], jobSeekingNumber: Int, jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Seq[Worker] = {
     val n = math.min(jobSeekingNumber, workers.count(_.currentJob==Job.unemployed))
     val potentialSeeking = workers.filter(_.currentJob==Job.unemployed)
     //val seeking: Seq[Worker] = (1 to n).map(_ => potentialSeeking(rng.nextInt(potentialSeeking.size))).groupBy(w => w).keys.toSeq
     val seeking = rng.shuffle(potentialSeeking).take(n) // use shuffle for random draw without replacement
     val notSeeking = workers.filter(!seeking.contains(_))
-    println(s"New job choice ; workers # = ${workers.size} ; unemployed # = ${potentialSeeking.size} ; seeking # = ${seeking.size} ; not seeking # = ${notSeeking.size}")
+    //println(s"New job choice ; workers # = ${workers.size} ; unemployed # = ${potentialSeeking.size} ; seeking # = ${seeking.size} ; not seeking # = ${notSeeking.size}")
     //println(s"Unique workers: ${workers.groupBy(w => w).keys.size}")
 
     def jobChoice(state: (Seq[Worker],Seq[Worker],Seq[Job])): (Seq[Worker],Seq[Worker],Seq[Job]) = {
@@ -167,14 +169,14 @@ object Worker {
       if (state._1.isEmpty) state else {
         val currentWorker = state._1.head
         val remaining = state._1.tail
-        val employed = currentWorker.newJobDiscreteChoice(state._3, perceivedInformality)
+        val employed = currentWorker.newJobDiscreteChoice(state._3, perceivedInformalities)
         val remainingJobs = state._3.filter(_ != employed.currentJob)
         (remaining, state._2 ++ Seq(employed), remainingJobs)
       }
     }
 
     val employed = if(seeking.nonEmpty) jobChoice(Iterator.iterate((seeking, Seq.empty[Worker], jobs))(jobChoice).takeWhile(_._1.nonEmpty).toSeq.last)._2 else Seq.empty[Worker]
-    println(s"Newly employed: ${employed.size}")
+    //println(s"Newly employed: ${employed.size}")
 
     notSeeking++employed
   }

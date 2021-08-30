@@ -45,6 +45,7 @@ package object abmjobmarket {
                        workers: Seq[Worker],
                        employers: Seq[Employer],
                        jobs: Seq[Job],
+                       jobSimilarities: Array[Array[Double]],
                        parameters: ModelParameters
                        )
 

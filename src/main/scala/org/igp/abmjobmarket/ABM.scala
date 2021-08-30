@@ -17,6 +17,7 @@ object ABM {
       workers = workers,
       employers = Seq.empty, // no need for employers in the demand-driven only model
       jobs = jobs,
+      jobSimilarities = Job.similarities(jobs),
       parameters = parameters
     )
 
@@ -31,7 +32,7 @@ object ABM {
    * @return
    */
   def modelStep(state: ModelState)(implicit rng: Random): ModelState = {
-    println("\n======Model step=====")
+    //println("\n======Model step=====")
 
     import state.parameters._
 
@@ -42,14 +43,15 @@ object ABM {
 
     // open jobs through unemployment
     val workers = adminFilled.map(_.faceUnemployment(unemploymentShare))
-    println(s"newly unemployed: ${workers.count(_.currentJob==Job.unemployed) - adminFilled.count(_.currentJob==Job.unemployed)}")
+    //println(s"newly unemployed: ${workers.count(_.currentJob==Job.unemployed) - adminFilled.count(_.currentJob==Job.unemployed)}")
 
     // choice of new jobs for some unemployed
     // val newlyEmployed = workers.map(_.newJobChoice(state.jobs)) // must be a function of the state, to avoid conflict on the same job
     // perceived informality as current mean field before the current step
-    val perceivedInformality = Indicators.informality(state)
-    println(s"Perceived informality = $perceivedInformality")
-    val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformality)
+    //val perceivedInformality = Indicators.informality(state) // ! depends on each job
+    val perceivedInformalities = Job.perceivedInformalities(state)
+    //println(s"Perceived informality = $perceivedInformality")
+    val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformalities)
 
     // only workers are updated for now
     state.copy(workers = newlyEmployed)
