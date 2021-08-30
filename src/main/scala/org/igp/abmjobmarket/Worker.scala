@@ -124,7 +124,7 @@ object Worker {
     val permit = raw(9) match {case "Yes" => true; case _ => false}
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
-    val dcparams = modelParameters.discreteChoiceParams
+    val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
 
     Worker(id, employed, salary, workingHours, experience, socialSecurity, insurance, contract, foreigner, permit, dcparams)
   }

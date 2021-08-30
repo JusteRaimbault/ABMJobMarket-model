@@ -1,0 +1,55 @@
+
+val workersNumber = Val[Int]
+val jobsNumber = Val[Int]
+val unemploymentShare = Val[Double]
+val perceivedInformalityCoef = Val[Double]
+val jobSeekingNumber = Val[Int]
+
+val id = Val[Int]
+val replication = Val[Long]
+
+val informality = Val[Array[Double]]
+val unemployment = Val[Array[Double]]
+
+val model = ScalaTask("""
+ |import org.igp.abmjobmarket._
+ |implicit val runtimeParameters: RuntimeParameters = RuntimeParameters(dataDirectory = (workDirectory / "data").toString+"/")
+ |val parameters = ModelParameters(
+ | workersNumber = input.workersNumber, jobsNumber = input.jobsNumber, unemploymentShare = input.unemploymentShare, perceivedInformalityCoef = input.perceivedInformalityCoef, jobSeekingNumber = input.jobSeekingNumber
+ |)
+ |val result = ABM.runModel(parameters)
+ |val informality = result.informality
+ |val unemployment = result.unemployment
+""".stripMargin
+) set (
+  plugins += pluginsOf[org.igp.abmjobmarket.ModelParameters],
+  resources += workDirectory / "data",
+  (inputs, outputs) += (workersNumber, jobsNumber, unemploymentShare, perceivedInformalityCoef, jobSeekingNumber),
+  outputs += (informality, unemployment),
+  workersNumber := 100, jobsNumber := 200, unemploymentShare := 0.1, perceivedInformalityCoef := 1.0, jobSeekingNumber := 10
+)
+
+//model hook ToStringHook()
+
+val purpose = "EXPLORATION"
+
+val resfilename = ((new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")).format(new java.util.Date()))+"_"+purpose+".csv"
+val indics_hook = CSVHook(workDirectory / "exploration" / resfilename,arrayOnRow=true)
+
+val env = LocalEnvironment(4)
+
+val exploration = DirectSampling(
+    evaluation = (model on env hook indics_hook),
+    sampling = (
+      ((workersNumber is 100)
+      x (jobsNumber in Seq(200,400))
+      x (unemploymentShare in Seq(0.25, 0.75))
+      x (perceivedInformalityCoef in Seq(-1.0,-0.5,0.0,0.5,1.0))
+      x (jobSeekingNumber in Seq(10,20))
+      )
+     withIndex id ) x (replication in UniformDistribution[Long]() take 1)
+)
+
+
+exploration
+

@@ -1,7 +1,5 @@
 package org.igp
 
-import scala.util.Random
-
 /**
  *
  */
