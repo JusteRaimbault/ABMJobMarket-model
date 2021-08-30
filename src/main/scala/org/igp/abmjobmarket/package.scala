@@ -11,14 +11,17 @@ package object abmjobmarket {
    * Model parameters
    * @param workersNumber number of workers
    * @param jobsNumber number of jobs
-   * @param unemploymentRate external control for rate of unemployment
+   * @param unemploymentShare external control for rate of unemployment
    * @param iterations total model iterations
    * @param seed random seed
    */
   case class ModelParameters(
                               workersNumber: Int,
                               jobsNumber: Int,
-                              unemploymentRate: Double,
+                              unemploymentShare: Double,
+                              workPermitShare: Double,
+                              discreteChoiceParams: Array[Double],
+                              jobSeekingNumber: Int,
                               iterations: Int,
                               seed: Long
                             )
@@ -28,7 +31,10 @@ package object abmjobmarket {
     iterations = 1000,
     workersNumber = 100,
     jobsNumber = 1000,
-    unemploymentRate = 0.25
+    unemploymentShare = 0.25,
+    workPermitShare = 0.5,
+    discreteChoiceParams = Array.fill(7)(1.0),
+    jobSeekingNumber = 15
   )
 
   case class RuntimeParameters(
@@ -38,17 +44,23 @@ package object abmjobmarket {
   case class ModelState(
                        workers: Seq[Worker],
                        employers: Seq[Employer],
-                       jobs: Seq[Job]
+                       jobs: Seq[Job],
+                       parameters: ModelParameters
                        )
 
   case class ModelResult(
                           states: Seq[ModelState],
-                          informality: Double
+                          informality: Array[Double],
+                          unemployment: Array[Double]
                         )
 
   object ModelResult {
 
-    def apply(states: Seq[ModelState]): ModelResult = ModelResult(states, 0.0)
+    def apply(states: Seq[ModelState]): ModelResult = {
+      val informality = states.map(Indicators.informality).toArray
+      val unemployment = states.map(Indicators.unemployment).toArray
+      ModelResult(states, informality, unemployment)
+    }
 
   }
 

@@ -12,6 +12,14 @@ case class Job(
                 contract: Double
               ){
 
+  def withContract: Boolean = if (contract==1.0) true else false
+
+  /**
+   * array of characteristics for the DC utility
+   * @return
+   */
+  def discreteChoiceVariables: Array[Double] = Array(salary, diversity, workingHours, experience, socialSecurity, insurance, contract)
+
 }
 
 object Job {
@@ -43,7 +51,7 @@ object Job {
 
   /**
    * Weighted sample of job data
-   *  Rq: optimal way to randomly draw is to draw all probs, sort and progressively advance in both seqs (cumulated probas)
+   *  Rq: optimal way to randomly draw is to draw all probas, sort and progressively advance in both seqs (cumulated probas)
    *  here: fill a larger pool with each job times weight x K
    *
    * @param file file

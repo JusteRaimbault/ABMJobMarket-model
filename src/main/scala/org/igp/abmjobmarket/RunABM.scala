@@ -1,7 +1,5 @@
 package org.igp.abmjobmarket
 
-import scala.util.Random
-
 object RunABM extends App {
 
   // global runtime parameters - no default value as system/path dependent
@@ -11,6 +9,7 @@ object RunABM extends App {
 
   val result = ABM.runModel()
 
-  println(result)
+  println("Informality : "+result.informality.toSeq)
+  println("Unemployment : "+result.unemployment.toSeq)
 
 }
