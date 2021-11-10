@@ -50,7 +50,7 @@ object ABM {
     // perceived informality as current mean field before the current step
     //val perceivedInformality = Indicators.informality(state) // ! depends on each job
     val perceivedInformalities = Job.perceivedInformalities(state)
-    //println(s"Perceived informality = $perceivedInformality")
+    //println(s"Perceived informalities = $perceivedInformalities")
     val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformalities)
 
     // only workers are updated for now

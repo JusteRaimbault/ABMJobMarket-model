@@ -78,9 +78,10 @@ object Job {
    * @param state model state
    * @return
    */
-  def perceivedInformalities(state: ModelState): Seq[Double] = {
+  def perceivedInformalities(state: ModelState, similaritiesTransformation: Array[Array[Double]] => Array[Array[Double]] = {w => w}): Seq[Double] = {
     val informalities = state.jobs.map(_.contract).toArray
-    state.jobSimilarities.map{weights =>
+    val w = similaritiesTransformation(state.jobSimilarities)
+    w.map{weights =>
       weights.dot(informalities) / weights.sum
     }
   }

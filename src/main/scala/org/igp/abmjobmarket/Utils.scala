@@ -38,8 +38,10 @@ object Utils {
 
   def randomDrawProbas[A](a: IterableOnce[A], p: IterableOnce[Double])(implicit rng: Random): A = {
     val r = rng.nextDouble()
-    var s = p.iterator.next(); var currentElem = a.iterator.next()
-    while (r>s&&p.iterator.hasNext&&a.iterator.hasNext) {s = s + p.iterator.next(); currentElem = a.iterator.next()}
+    var s = p.iterator.next(); var currentElem = a.iterator.next();var i = 0;
+    //println(s)
+    while (r>s&&p.iterator.hasNext&&a.iterator.hasNext) {s = s + p.iterator.next(); currentElem = a.iterator.next();i=i+1}
+    //println(s"random draw probas: $i ; $r > $s")
     currentElem
   }
 

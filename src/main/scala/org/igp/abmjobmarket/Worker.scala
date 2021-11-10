@@ -59,10 +59,23 @@ case class Worker(
    * @return
    */
   def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Worker = {
-    val utilitiesexp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality)).dot(discreteChoiceCoefs))}
+    val utilities = jobs.zip(perceivedInformalities).map{case (j,informality) => (j.discreteChoiceVariables++Array(informality)).dot(discreteChoiceCoefs)}
+    //println(s"avg utility = ${utilities.sum/utilities.size}")
+    val utilitiesexp = utilities.map(math.exp)
     val s = utilitiesexp.sum
     val probas = utilitiesexp.map(_ / s)
+
+    // DEBUG: probas diff with opposite coef for perceived informalities
+    val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
+    val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
+    //println(s"Proba diff: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.sum}")
+    println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
+
     val chosenJob = Utils.randomDrawProbas(jobs, probas)
+
+    val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
+    if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
+
     this.copy(employed = true, currentJob = chosenJob)
   }
 

@@ -53,7 +53,11 @@ package object abmjobmarket {
                           states: Seq[ModelState],
                           informality: Array[Double],
                           unemployment: Array[Double]
-                        )
+                        ) {
+    def delta(result2: ModelResult): Double= {
+      informality.zip(result2.informality).map{case(i1,i2) => math.abs(i1-i2)}.sum + unemployment.zip(result2.unemployment).map{case(i1,i2) => math.abs(i1-i2)}.sum
+    }
+  }
 
   object ModelResult {
 
