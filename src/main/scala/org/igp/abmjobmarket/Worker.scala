@@ -127,14 +127,16 @@ object Worker {
     // worker characs
     val id = raw.head.toInt
     val employed = raw(1) match {case "Yes" => true; case _ => false}
-    val salary = raw(2) match {case s if s.length == 0 => 0.0; case s => s.toDouble}
-    val workingHours = raw(3) match {case s if s.length == 0 => 0.0; case s => s.toDouble}
+    val salary = raw(2) match {case s if s.isEmpty => 0.0; case s => s.toDouble}
+    val workingHours = raw(3) match {case s if s.isEmpty => 0.0; case s => s.toDouble}
     val experience = raw(4) match {case "Less than 6 months" => rng.between(1.0,6.0); case "6-11 months" => rng.between(6.0, 12.0); case "12-17 months" => rng.between(12.0, 18.0); case "18-23 months" => rng.between(18.0,24.0); case "2 to less than 5 years" => rng.between(24.0, 60.0); case "5 to less than 10 years" => rng.between(60.0, 120.0); case "10 years or more" => rng.between(120.0, 140.0); case _ => 0.0}
     val socialSecurity = raw(5).toInt match {case 4 => false; case _ => true}
     val insurance = raw(6) match {case "Yes" => true; case _ => false}
     val contract = raw(7) match {case "No" => false; case _ => true}
-    val foreigner = raw(8) match {case "Lebanese" => false; case _ => true}
-    val permit = raw(9) match {case "Yes" => true; case _ => false}
+    val diversity =
+
+    //val foreigner = raw(8) match {case "Lebanese" => false; case _ => true}
+    //val permit = raw(9) match {case "Yes" => true; case _ => false}
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
     val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
