@@ -124,7 +124,7 @@ object Worker {
    */
   def apply(raw: Seq[String], modelParameters: ModelParameters)(implicit rng: Random): Worker = {
 
-    // worker characs
+    // worker characs - note: these are not used in the discrete choice, but in the behavior for some
     val id = raw.head.toInt
     val employed = raw(1) match {case "Yes" => true; case _ => false}
     val salary = raw(2) match {case s if s.isEmpty => 0.0; case s => s.toDouble}
@@ -133,10 +133,11 @@ object Worker {
     val socialSecurity = raw(5).toInt match {case 4 => false; case _ => true}
     val insurance = raw(6) match {case "Yes" => true; case _ => false}
     val contract = raw(7) match {case "No" => false; case _ => true}
-    val diversity =
 
-    //val foreigner = raw(8) match {case "Lebanese" => false; case _ => true}
-    //val permit = raw(9) match {case "Yes" => true; case _ => false}
+    //val diversity = raw(8) match {} // diversity is a job attribute
+
+    val foreigner = raw(8) match {case "Lebanese" => false; case _ => true}
+    val permit = raw(9) match {case "Yes" => true; case _ => false}
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
     val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
