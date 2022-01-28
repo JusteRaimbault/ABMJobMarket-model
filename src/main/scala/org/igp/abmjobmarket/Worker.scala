@@ -66,15 +66,15 @@ case class Worker(
     val probas = utilitiesexp.map(_ / s)
 
     // DEBUG: probas diff with opposite coef for perceived informalities
-    val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
-    val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
+    //val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
+    //val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
     //println(s"Proba diff: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.sum}")
-    println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
+    //println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
 
     val chosenJob = Utils.randomDrawProbas(jobs, probas)
 
-    val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
-    if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
+    //val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
+    //if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
 
     this.copy(employed = true, currentJob = chosenJob)
   }
@@ -140,7 +140,8 @@ object Worker {
     val permit = raw(9) match {case "Yes" => true; case _ => false}
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
-    val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
+    // fixed from estimated values from the DCE - need jobs average -> do after job init? - or now with params set properly before, as a function of jobs
+    //val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
 
     Worker(id, employed, salary, workingHours, experience, socialSecurity, insurance, contract, foreigner, permit, dcparams)
   }
