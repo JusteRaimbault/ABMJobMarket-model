@@ -104,6 +104,7 @@ object Job {
     val informalities = state.jobs.map(_.contract).toArray
     val w = similaritiesTransformation(state.jobSimilarities)
     //println(w.flatten.sum)
+    //println(w(0).toSeq)
     w.map{weights =>
       weights.dot(informalities) / weights.sum
     }
@@ -117,8 +118,8 @@ object Job {
   def similarities(jobs: Seq[Job]): Array[Array[Double]] = {
     val mins = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.min)
     val maxs = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.max)
-    println(mins.toSeq)
-    println(maxs.toSeq)
+    //println(mins.toSeq)
+    //println(maxs.toSeq)
     val res = jobs.toArray.map { j1 =>
       val x1 = j1.discreteChoiceVariables.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
       val n1 = x1.norm
@@ -131,7 +132,7 @@ object Job {
       }
     }
     //println(res.toSeq.map(_.sum))
-    println(res(0).toSeq)
+    //println(res(0).toSeq)
     res
   }
 

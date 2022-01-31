@@ -79,6 +79,7 @@ object ABM {
       employers = Seq.empty, // no need for employers in the demand-driven only model
       jobs = jobs,
       jobSimilarities = Job.similarities(jobs),
+      socialNetwork = Array.empty[Array[Double]],
       parameters = parameters
     )
 
@@ -133,13 +134,19 @@ object ABM {
    * @return
    */
   def runModel(parameters: ModelParameters)(implicit runtimeParameters: RuntimeParameters): ModelResult = {
+
+    val startTime = System.currentTimeMillis()
+
     import parameters._
     implicit val rng: Random = new Random(seed)
 
     val initialState = setup(parameters)
-    ModelResult(
+    val res = ModelResult(
       Iterator.iterate(initialState)(modelStep).take(iterations + 1).toSeq
     )
+
+    Utils.log(s"Model run took ${System.currentTimeMillis()-startTime} ms")
+    res
   }
 
   /**

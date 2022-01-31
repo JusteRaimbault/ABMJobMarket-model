@@ -58,6 +58,7 @@ package object abmjobmarket {
                        employers: Seq[Employer],
                        jobs: Seq[Job],
                        jobSimilarities: Array[Array[Double]],
+                       socialNetwork: Array[Array[Double]],
                        parameters: ModelParameters
                        )
 

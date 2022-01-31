@@ -21,7 +21,8 @@ object RunABM extends App {
   //val result2 = ABM.runModel(ModelParameters(unemploymentShare = 0.9))
 
   // test jobSimilarityHierarchy - note: same seed, no random noise - Pb!: same res!
-  val result1 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 0.0, perceivedInformalityCoef=100.0))
+  // ! zhen all jobs tend to be equiprobable, model is much slower (random drawing)
+  val result1 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef= -100.0))
   val result2 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef=100.0))
 
   println(result1 delta result2)

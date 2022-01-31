@@ -1,7 +1,11 @@
 package org.igp.abmjobmarket
 
+import java.util
+
 import org.igp.abmjobmarket
 
+import scala.jdk.CollectionConverters.IterableHasAsJava
+import scala.reflect.ClassTag
 import scala.util.Random
 
 object Utils {
@@ -44,13 +48,36 @@ object Utils {
     def norm: Double = math.sqrt(a.map(aa => aa*aa).sum)
   }
 
-  def randomDrawProbas[A](a: IterableOnce[A], p: IterableOnce[Double])(implicit rng: Random): A = {
+  /**
+   * Seems much more efficient with equiprobable objects
+   * - weird since the while is bounded by O(|A|) and the cumsum is O(|A|) (and binarySearch is O(log(|A|)))
+   * @param a objects
+   * @param p probas
+   * @param rng rng
+   * @tparam A type
+   * @return
+   */
+  def randomDrawProbas[A: ClassTag](a: IterableOnce[A], p: IterableOnce[Double])(implicit rng: Random): A = {
+
     val r = rng.nextDouble()
+
+/*
     var s = p.iterator.next(); var currentElem = a.iterator.next();var i = 0;
     //println(s)
     while (r>s&&p.iterator.hasNext&&a.iterator.hasNext) {s = s + p.iterator.next(); currentElem = a.iterator.next();i=i+1}
     //println(s"random draw probas: $i ; $r > $s")
     currentElem
+*/
+
+
+    val cumsum: Array[Double] = p.iterator.toArray.map{var s = 0.0; d => {s += d; s}}
+    val aarray = a.iterator.toArray[A]
+    val insertionIndex = util.Arrays.binarySearch(cumsum, r)
+    val ind = if (insertionIndex >= 0) insertionIndex else
+      math.min(math.abs(insertionIndex + 1), aarray.length-1)
+    aarray(ind)
+
   }
+
 
 }
