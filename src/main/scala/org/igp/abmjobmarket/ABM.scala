@@ -7,11 +7,72 @@ object ABM {
   val workerFileName: String = "worker_DCE.csv"
   val jobFileName: String = "jobs.csv"
 
+  /**
+   * Hardcoded empirical DC coefs from DCE
+   */
+  val empiricalDCCoefs: Map[String, Array[((Double, Double), Double)]] = Map(
+    "salary" -> Array(
+      ((450000,999999),0.102),
+      ((1000000,1999999),0.426),
+      ((2000000,3500000),0.658),
+      ((3500000, Double.PositiveInfinity),0.666)
+    ),
+    "workingHours" -> discreteDCCoef(0.122),
+    "experience" -> discreteDCCoef(-0.339),
+    "socialSecurity" -> discreteDCCoef(0.317),
+    "diversity" -> Array(
+      ((0.5,1.5),-0.085),
+      ((1.5,2.5),-0.129)
+    ),
+    "insurance" -> discreteDCCoef(0.137),
+    "contract" -> discreteDCCoef(-0.258)
+  )
+
+  def discreteDCCoef(beta: Double): Array[((Double, Double), Double)] = Array(((Double.NaN, Double.NaN),beta))
+
+  /**
+   * Transformation from discrete DC coefs to continous variable
+   * @param rawCoefs raw coefs from empirical DCE
+   * @param jobs jobs
+   * @return coefs array, in order of Job field names (! productElementNames is ordered: ok)
+   */
+  def transformDCCoefs(rawCoefs: Map[String, Array[((Double, Double), Double)]], jobs: Seq[Job]): Array[Double] = {
+    val fieldNames = Job.unemployed.productElementNames.toArray
+    val res = fieldNames.map{field =>
+      if (rawCoefs(field).head._1._1.isNaN) rawCoefs(field).head._2
+      else {
+        val rawvals = rawCoefs(field).map(_._2)
+        val bounds = rawCoefs(field).map(_._1)
+        val fieldValues = jobs.map { j =>
+          val getter = j.getClass.getDeclaredMethod(field)
+          getter.invoke(j).asInstanceOf[Double]
+        }
+        val numJobs = fieldValues.size.toDouble
+        val avgField = fieldValues.sum / numJobs
+        bounds.map{case (min,max) => fieldValues.count(v => v>=min&&v<max).toDouble / (numJobs * avgField)}.zip(rawvals).map{
+          case (w, beta) => w*beta
+        }.sum
+      }
+    }
+    //Utils.log(res.mkString(" "))
+    res
+  }
+
   def setup(parameters: ModelParameters)(implicit rng: Random, runtimeParameters: RuntimeParameters): ModelState = {
     import parameters._
 
-    val workers  = Worker.syntheticWorkerPopulationDataSample(runtimeParameters.dataDirectory+workerFileName, parameters)
+    // setup jobs before workers - dc params adjusted with empirical averages
     val jobs = Job.syntheticJobsWeightedDataSample(runtimeParameters.dataDirectory+jobFileName, jobsNumber)
+
+    // update dc coefs only if empty default is provided (to deactivate: provide full 0.0 array)
+    val updatedDCCoefs = if (parameters.discreteChoiceParams.isEmpty) parameters.copy(
+      discreteChoiceParams = transformDCCoefs(empiricalDCCoefs, jobs)++Array(parameters.perceivedInformalityCoef, parameters.socialNetworkCoef)
+    )
+    else parameters
+
+    Utils.log(s"Updated DC params: ${updatedDCCoefs.discreteChoiceParams.toSeq}")
+
+    val workers  = Worker.syntheticWorkerPopulationDataSample(runtimeParameters.dataDirectory+workerFileName, updatedDCCoefs)
 
     ModelState(
       workers = workers,

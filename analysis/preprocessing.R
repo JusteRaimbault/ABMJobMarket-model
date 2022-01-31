@@ -15,7 +15,12 @@ workers <- read.dta13(paste0(datadir,"Leverhulme_worker_clean.dta"))
 
 columns = c("works","income","hours_worked","time_job","social_security_cat","insurance","contract","nation_HH","permit")
 
-write.csv(workers[,columns], file = paste0(datadir,"worker_DCE.csv"))
+for(c in columns){
+  workers[,c] <- as.character(workers[,c])
+  workers[is.na(workers[,c]),c] = "0"
+}
+
+write.csv(workers[,columns], file = paste0(datadir,"worker_DCE.csv"),row.names = F, quote = F)
 
 
 ######

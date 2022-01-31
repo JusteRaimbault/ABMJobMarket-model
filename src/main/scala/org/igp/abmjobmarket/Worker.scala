@@ -59,7 +59,7 @@ case class Worker(
    * @return
    */
   def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Worker = {
-    val utilities = jobs.zip(perceivedInformalities).map{case (j,informality) => (j.discreteChoiceVariables++Array(informality)).dot(discreteChoiceCoefs)}
+    val utilities = jobs.zip(perceivedInformalities).map{case (j,informality) => (j.discreteChoiceVariables++Array(informality,0.0)).dot(discreteChoiceCoefs)}
     //println(s"avg utility = ${utilities.sum/utilities.size}")
     val utilitiesexp = utilities.map(math.exp)
     val s = utilitiesexp.sum
@@ -141,7 +141,7 @@ object Worker {
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
     // fixed from estimated values from the DCE - need jobs average -> do after job init? - or now with params set properly before, as a function of jobs
-    //val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
+    val dcparams = modelParameters.discreteChoiceParams //++Array(modelParameters.perceivedInformalityCoef, modelParameters.socialNetworkCoef) // additional coefs set at transfo
 
     Worker(id, employed, salary, workingHours, experience, socialSecurity, insurance, contract, foreigner, permit, dcparams)
   }

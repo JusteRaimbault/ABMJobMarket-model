@@ -18,6 +18,7 @@ case class Job(
 
   /**
    * array of characteristics for the DC utility
+   * hardcoded for: unemployed.productElementNames.toArray.map(this.getDeclaredField(_)) - would be generic impl
    * @return
    */
   def discreteChoiceVariables: Array[Double] = Array(salary, diversity, workingHours, experience, socialSecurity, insurance, contract)
@@ -27,7 +28,8 @@ case class Job(
 object Job {
 
   // dce_salary => salary, to avoid comma issues in csv
-  val jobDataFields: Seq[String] = Seq("salary","dce_diversity","dce_hours","dce_skills","dce_social_security","dce_insurance","dce_contract","choice")
+  // Seq("salary","dce_diversity","dce_hours","dce_skills","dce_social_security","dce_insurance","dce_contract","choice")
+  val jobDataFields: Seq[String] = Seq("dce_salary","dce_diversity","dce_hours","dce_skills","dce_social_security","dce_insurance","dce_contract","choice")
 
   val unemployed: Job = Job(0.0,0.0,0.0,0.0,0.0,0.0,0.0)
 
