@@ -94,13 +94,16 @@ object Job {
 
 
   /**
-   * Compute mean field perceived informality for each job, given a distance matrix between jobs (not recomputed at each step when jobs are fixed)
+   * Compute mean field perceived informality for each job, given a distance matrix between jobs
+   *  (not recomputed at each step when jobs are fixed)
+   *  Note: as function to transform similarities may change in time, transfo recomputed - this may be improved in simplest case
    * @param state model state
    * @return
    */
   def perceivedInformalities(state: ModelState, similaritiesTransformation: Array[Array[Double]] => Array[Array[Double]] = {w => w}): Seq[Double] = {
     val informalities = state.jobs.map(_.contract).toArray
     val w = similaritiesTransformation(state.jobSimilarities)
+    //println(w.flatten.sum)
     w.map{weights =>
       weights.dot(informalities) / weights.sum
     }
@@ -112,15 +115,24 @@ object Job {
    * @return
    */
   def similarities(jobs: Seq[Job]): Array[Array[Double]] = {
-    jobs.toArray.map { j1 =>
-      val n1 = j1.discreteChoiceVariables.norm
+    val mins = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.min)
+    val maxs = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.max)
+    println(mins.toSeq)
+    println(maxs.toSeq)
+    val res = jobs.toArray.map { j1 =>
+      val x1 = j1.discreteChoiceVariables.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
+      val n1 = x1.norm
       jobs.toArray.map { j2 =>
-        val n2 = j2.discreteChoiceVariables.norm
+        val x2 = j2.discreteChoiceVariables.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
+        val n2 = x2.norm
         if (n1==0.0&&n2==0.0) 1.0 else {
-          if (n1==0.0 || n2==0.0) 0.0 else j1.discreteChoiceVariables.dot(j2.discreteChoiceVariables) / (n1*n2)
+          if (n1==0.0 || n2==0.0) 0.0 else x1.dot(x2) / (n1*n2)
         }
       }
     }
+    //println(res.toSeq.map(_.sum))
+    println(res(0).toSeq)
+    res
   }
 
 

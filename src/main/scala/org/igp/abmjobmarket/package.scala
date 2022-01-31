@@ -24,6 +24,7 @@ package object abmjobmarket {
                               perceivedInformalityCoef: Double = 0.0,
                               socialNetworkCoef: Double = 0.0,
                               jobSeekingNumber: Int = 20,
+                              jobSimilarityHierarchy: Double = 1.0,
                               iterations: Int = 1000,
                               seed: Long = 0L
                             )

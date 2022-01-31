@@ -108,10 +108,18 @@ object ABM {
 
     // choice of new jobs for some unemployed
     // val newlyEmployed = workers.map(_.newJobChoice(state.jobs)) // must be a function of the state, to avoid conflict on the same job
+
     // perceived informality as current mean field before the current step
     //val perceivedInformality = Indicators.informality(state) // ! depends on each job
-    val perceivedInformalities = Job.perceivedInformalities(state)
+    val perceivedInformalities = Job.perceivedInformalities(
+      state,
+      similaritiesTransformation = {w => w.map{_.map{s =>
+        //math.pow((1.0 + s)/2.0, jobSimilarityHierarchy)
+        math.pow(s, jobSimilarityHierarchy)
+      }}}
+    )
     //println(s"Perceived informalities = $perceivedInformalities")
+
     val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformalities)
 
     // only workers are updated for now
