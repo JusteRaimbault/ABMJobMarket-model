@@ -1,8 +1,15 @@
 package org.igp.abmjobmarket
 
+import org.igp.abmjobmarket
+
 import scala.util.Random
 
 object Utils {
+
+  def log(msg: String): Unit = {
+    if (abmjobmarket.DEBUG) println(msg)
+  }
+
 
   /**
    *  ! does not take into account quotes
@@ -17,6 +24,7 @@ object Utils {
     val lines = source.getLines()
     val header = lines.next().split(sep)
     val headerInds = columns.map(header.indexOf(_))
+    //println(columns)
     //println(header.toSeq+" ; "+headerInds.toSeq)
     val res = lines.zipWithIndex.map{case (s,i) =>
       val vals = s.split(sep)

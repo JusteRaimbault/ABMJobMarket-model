@@ -59,22 +59,22 @@ case class Worker(
    * @return
    */
   def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Worker = {
-    val utilities = jobs.zip(perceivedInformalities).map{case (j,informality) => (j.discreteChoiceVariables++Array(informality)).dot(discreteChoiceCoefs)}
+    val utilities = jobs.zip(perceivedInformalities).map{case (j,informality) => (j.discreteChoiceVariables++Array(informality,0.0)).dot(discreteChoiceCoefs)}
     //println(s"avg utility = ${utilities.sum/utilities.size}")
     val utilitiesexp = utilities.map(math.exp)
     val s = utilitiesexp.sum
     val probas = utilitiesexp.map(_ / s)
 
     // DEBUG: probas diff with opposite coef for perceived informalities
-    val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
-    val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
+    //val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
+    //val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
     //println(s"Proba diff: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.sum}")
     //println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
 
     val chosenJob = Utils.randomDrawProbas(jobs, probas)
 
-    val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
-    if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
+    //val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
+    //if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
 
     this.copy(employed = true, currentJob = chosenJob)
   }
@@ -124,20 +124,24 @@ object Worker {
    */
   def apply(raw: Seq[String], modelParameters: ModelParameters)(implicit rng: Random): Worker = {
 
-    // worker characs
+    // worker characs - note: these are not used in the discrete choice, but in the behavior for some
     val id = raw.head.toInt
     val employed = raw(1) match {case "Yes" => true; case _ => false}
-    val salary = raw(2) match {case s if s.length == 0 => 0.0; case s => s.toDouble}
-    val workingHours = raw(3) match {case s if s.length == 0 => 0.0; case s => s.toDouble}
+    val salary = raw(2) match {case s if s.isEmpty => 0.0; case s => s.toDouble}
+    val workingHours = raw(3) match {case s if s.isEmpty => 0.0; case s => s.toDouble}
     val experience = raw(4) match {case "Less than 6 months" => rng.between(1.0,6.0); case "6-11 months" => rng.between(6.0, 12.0); case "12-17 months" => rng.between(12.0, 18.0); case "18-23 months" => rng.between(18.0,24.0); case "2 to less than 5 years" => rng.between(24.0, 60.0); case "5 to less than 10 years" => rng.between(60.0, 120.0); case "10 years or more" => rng.between(120.0, 140.0); case _ => 0.0}
     val socialSecurity = raw(5).toInt match {case 4 => false; case _ => true}
     val insurance = raw(6) match {case "Yes" => true; case _ => false}
     val contract = raw(7) match {case "No" => false; case _ => true}
+
+    //val diversity = raw(8) match {} // diversity is a job attribute
+
     val foreigner = raw(8) match {case "Lebanese" => false; case _ => true}
     val permit = raw(9) match {case "Yes" => true; case _ => false}
 
     // discrete choice params - can be extended to distributions around baseline fitted dc params
-    val dcparams = modelParameters.discreteChoiceParams++Array(modelParameters.perceivedInformalityCoef)
+    // fixed from estimated values from the DCE - need jobs average -> do after job init? - or now with params set properly before, as a function of jobs
+    val dcparams = modelParameters.discreteChoiceParams //++Array(modelParameters.perceivedInformalityCoef, modelParameters.socialNetworkCoef) // additional coefs set at transfo
 
     Worker(id, employed, salary, workingHours, experience, socialSecurity, insurance, contract, foreigner, permit, dcparams)
   }
