@@ -11,11 +11,12 @@ object RunABM extends App {
   //println("Informality : "+result.informality.toSeq)
   //println("Unemployment : "+result.unemployment.toSeq)
 
-  val result1 = ABM.runModel(ModelParameters(perceivedInformalityCoef = -10.0,discreteChoiceParams = Array.fill(7)(0.001)))
+  //val result1 = ABM.runModel(ModelParameters(perceivedInformalityCoef = -10.0,discreteChoiceParams = Array.fill(7)(0.001)))
   val result2 = ABM.runModel(ModelParameters(perceivedInformalityCoef = 10.0,discreteChoiceParams = Array.fill(7)(0.001)))
   //val result1 = ABM.runModel(ModelParameters(unemploymentShare = 0.1))
   //val result2 = ABM.runModel(ModelParameters(unemploymentShare = 0.9))
 
-  println(result1 delta result2)
+  //println(result1 delta result2)
+  println(result2.informality.toSeq)
 
 }

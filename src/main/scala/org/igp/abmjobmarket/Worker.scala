@@ -69,7 +69,7 @@ case class Worker(
     val utilitiesexpOpp = jobs.zip(perceivedInformalities).map{case (j,informality) => math.exp((j.discreteChoiceVariables++Array(informality*(-1.0))).dot(discreteChoiceCoefs))}
     val sOpp = utilitiesexpOpp.sum; val probasOpp = utilitiesexpOpp.map(_ / sOpp)
     //println(s"Proba diff: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.sum}")
-    println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
+    //println(s"Proba diff max: ${probas.zip(probasOpp).map{case (p1,p2) => math.abs(p1-p2)}.max}")
 
     val chosenJob = Utils.randomDrawProbas(jobs, probas)
 
