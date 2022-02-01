@@ -5,7 +5,7 @@ object RunABM extends App {
   // global runtime parameters - no default value as system/path dependent
   implicit val runtimeParameters: RuntimeParameters = RuntimeParameters(
     //dataDirectory = System.getenv("CS_HOME")+"/Misc/BiblioDocs-tmp/UrbanDynamics/ABMJobs/STATA_20210818/DATA/Cleaning/"
-    dataDirectory = System.getenv("CS_HOME")+"/Misc/BiblioDocs-tmp/UrbanDynamics/ABMJobs/STATA_20220128/DATA/Cleaning/" // newest data
+    dataDirectory = System.getenv("CS_HOME")+"/Misc/BiblioDocs/UrbanDynamics/ABMJobs/STATA_20220128/DATA/Cleaning/" // newest data
   )
 
   //val result = ABM.runModel()
@@ -21,11 +21,16 @@ object RunABM extends App {
   //val result2 = ABM.runModel(ModelParameters(unemploymentShare = 0.9))
 
   // test jobSimilarityHierarchy - note: same seed, no random noise - Pb!: same res!
-  // ! zhen all jobs tend to be equiprobable, model is much slower (random drawing)
-  val result1 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef= -100.0))
-  val result2 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef=100.0))
+  // ! when all jobs tend to be equiprobable, model is much slower (random drawing)
+  //val result1 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef= -100.0))
+  //val result2 = ABM.runModel(ModelParameters(jobSimilarityHierarchy = 10.0, perceivedInformalityCoef=100.0))
+
+  // test social network proximity - Q: complexity social nw? ok
+  val result1 = ABM.runModel(ModelParameters(socialNetworkCoef= 10.0, socialNetworkHierarchy = 5.0))
+  val result2 = ABM.runModel(ModelParameters(socialNetworkCoef= -10.0, socialNetworkHierarchy = 5.0))
 
   println(result1 delta result2)
-  // println(result2.informality.toSeq)
+  println(result1)
+  println(result2)
 
 }

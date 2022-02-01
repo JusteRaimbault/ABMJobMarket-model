@@ -3,8 +3,12 @@ package org.igp.abmjobmarket
 import scala.util.Random
 import Utils._
 
+import scala.collection.mutable
+
 
 /**
+ *  ! when a worker finds a job, we should update its socio-eco characteristics? (and then distance matrix)
+ *   -> not in this static version of the model
  *
  * @param employed currently employed
  * @param salary salary
@@ -17,6 +21,7 @@ import Utils._
  * @param workPermit no work permit: no contract only
  * @param discreteChoiceCoefs DC fitted coefs; includes belief about unformality
  * @param currentJob current job
+ * @param currentUtilities utilities estimated at the previous step by this worker (all time memory stored in the model state utility matrix); stored by job id to save memory
  */
 case class Worker(
                    id: Int,
@@ -30,13 +35,17 @@ case class Worker(
                    foreigner: Boolean,
                    workPermit: Boolean,
                    discreteChoiceCoefs: Array[Double],
-                   currentJob: Job = Job.unemployed
+                   currentJob: Job = Job.unemployed,
+                   currentUtilities: Map[Int, Double] = Map.empty[Int, Double]
                  ) {
 
   // characteristics of the job and not of the worker are taken into account
   //def discreteChoiceVariables: Seq[Double] = Array(salary, workingHours, experience, if (socialSecurity) 1.0 else 0.0, if (insurance) 1.0 else 0.0, if (contract) 1.0 else 0.0)
 
   //def discreteChoiceCoefs: Seq[Double] = Array.fill(7)(1.0)
+
+  def socioEcoCharacteristics: Array[Double] =
+    Array(employed.toDouble, salary, workingHours, experience, socialSecurity.toDouble, insurance.toDouble, contract.toDouble, foreigner.toDouble, workPermit.toDouble)
 
   /**
    * uniform random job
@@ -58,12 +67,14 @@ case class Worker(
    * @param rng rng
    * @return
    */
-  def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Worker = {
+  def newJobDiscreteChoice(jobs: Seq[Job], perceivedInformalities: Map[Int,Double], socialPerception: Map[Int, Double])(implicit rng: Random): Worker = {
 
-    val availableJobs = if (foreigner&&(!workPermit)) jobs.filter(_.contract==0.0) else jobs
+    val filteredJobsAndVars = jobs.map(j => (j, perceivedInformalities(j.id), socialPerception(j.id)))
 
-    val utilities = availableJobs.zip(perceivedInformalities).map{
-      case (j,informality) => (j.discreteChoiceVariables++Array(informality,0.0)).dot(discreteChoiceCoefs)
+    val availableJobs = if (foreigner&&(!workPermit)) filteredJobsAndVars.filter(_._1.contract==0.0) else filteredJobsAndVars
+
+    val utilities = availableJobs.map{
+      case (j,informality,social) => (j.discreteChoiceVariables++Array(informality,social)).dot(discreteChoiceCoefs)
     }
     //println(s"avg utility = ${utilities.sum/utilities.size}")
     val utilitiesexp = utilities.map(math.exp)
@@ -82,7 +93,11 @@ case class Worker(
     //val chosenJobOpp = Utils.randomDrawProbas(jobs, probasOpp)
     //if (chosenJob != chosenJobOpp) println(s"chosen job : $chosenJob ; with opp : $chosenJobOpp")
 
-    this.copy(employed = true, currentJob = chosenJob)
+    this.copy(
+      employed = true,
+      currentJob = chosenJob._1,
+      currentUtilities = availableJobs.zip(utilities).map{case ((j,_,_),u) => (j.id, u)}.toMap
+    )
   }
 
   /**
@@ -180,7 +195,11 @@ object Worker {
    * @param rng rng
    * @return
    */
-  def newJobsChoice(workers: Seq[Worker], jobSeekingNumber: Int, jobs: Seq[Job], perceivedInformalities: Seq[Double])(implicit rng: Random): Seq[Worker] = {
+  def newJobsChoice(workers: Seq[Worker],
+                    jobSeekingNumber: Int, jobs: Seq[Job],
+                    perceivedInformalities: Map[Int,Double],
+                    socialPerception: Map[Int, Map[Int, Double]]
+                   )(implicit rng: Random): Seq[Worker] = {
     val n = math.min(jobSeekingNumber, workers.count(_.currentJob==Job.unemployed))
     val potentialSeeking = workers.filter(_.currentJob==Job.unemployed)
     //val seeking: Seq[Worker] = (1 to n).map(_ => potentialSeeking(rng.nextInt(potentialSeeking.size))).groupBy(w => w).keys.toSeq
@@ -194,7 +213,7 @@ object Worker {
       if (state._1.isEmpty) state else {
         val currentWorker = state._1.head
         val remaining = state._1.tail
-        val employed = currentWorker.newJobDiscreteChoice(state._3, perceivedInformalities)
+        val employed = currentWorker.newJobDiscreteChoice(state._3, perceivedInformalities, socialPerception(currentWorker.id))
         val remainingJobs = state._3.filter(_ != employed.currentJob)
         (remaining, state._2 ++ Seq(employed), remainingJobs)
       }
@@ -207,11 +226,87 @@ object Worker {
   }
 
 
+  /**
+   * Random weighted social network (null model when the mechanism is activated)
+   * @param n number of workers
+   * @param rng rng
+   * @return
+   */
+  def randomSocialNetwork(workers: Seq[Worker])(implicit rng: Random): Map[Int, Map[Int, Double]] =
+    workers.map { w =>
+      (w.id,
+        workers.map(w2 => (w2.id, rng.nextDouble())).toMap
+        )
+    }.toMap
 
-  def randomSocialNetwork(n: Int)(implicit rng: Random): Array[Array[Double]] = Array.fill(n,n)(rng.nextDouble())
+  /**
+   * Social network based on cosine similarity, with a given hierarchy
+   * @param workers workers
+   * @param socialNetworkHierarchy network hierarchy
+   * @return
+   */
+  def proximitySocialNetwork(workers: Seq[Worker], socialNetworkHierarchy: Double): Map[Int, Map[Int, Double]] = {
+    val mins = workers.toArray.map(_.socioEcoCharacteristics).transpose.map(_.min)
+    val maxs = workers.toArray.map(_.socioEcoCharacteristics).transpose.map(_.max)
+    val res = workers.map { j1 =>
+      val x1 = j1.socioEcoCharacteristics.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
+      val n1 = x1.norm
+      (j1.id,
+        workers.map { j2 =>
+        val x2 = j2.socioEcoCharacteristics.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
+        val n2 = x2.norm
+        val s = if (n1==0.0&&n2==0.0) 1.0 else {
+          if (n1==0.0 || n2==0.0) 0.0 else math.pow(x1.dot(x2) / (n1*n2), socialNetworkHierarchy)
+        }
+        (j2.id,s)
+      }.toMap)
+    }
+    res.toMap
+  }
 
-  def proximitySocialNetwork(workers: Seq[Worker]): Array[Array[Double]] = Array.empty
+  /**
+   * Utilities of jobs perceived trough neighbors in the social network (kind of opinion model)
+   *  do not renormalise utilities, otherwise effect throught the socialNetworkCoefs would change in time
+   *
+   *  Note: matrices multiplication ~ by hand like this is not efficient
+   * @param state model state
+   * @return
+   */
+  def perceivedUtilities(state: ModelState): Map[Int, Map[Int, Double]] = {
+    import state._
+    val transposedPastUtilities: Map[Int, Map[Int, Double]] = pastUtilities.toSeq.flatMap{case (i,jobUtils) => jobUtils.toSeq.map{case (j,u) => (i,j,u)}}.
+      groupBy(_._2).map{case (j,s) => (j, s.map{case (i,_,u) => (i,u)}.toMap)}
+    socialNetwork.map{case (i, row) =>
+      val stot = row.values.sum
+      (i,
+        transposedPastUtilities.map{case (j, utilities) =>
+        (j,row.map{case (ii, s) => s*utilities(ii)}.sum / stot)
+      }
+      )
+    }
+  }
 
+
+  def initialEmptyUtilities(workers: Seq[Worker], jobs: Seq[Job]): Map[Int, Map[Int, Double]] =
+    workers.map{w => (w.id,
+      jobs.map{j => (j.id, 0.0)}.toMap
+      )
+    }.toMap
+
+
+  /**
+   * Given workers which have been on the job market (memorised utilities), update the pastUtilities matrix
+   * @param workers workers
+   * @param pastUtilities matrix
+   * @return
+   */
+  def updatePastUtilities(workers: Seq[Worker], pastUtilities: Map[Int, Map[Int, Double]]): Map[Int, Map[Int, Double]] = {
+    // copy as mutable and update (maybe not most efficient way)
+    val m = new mutable.HashMap[(Int,Int), Double]
+    pastUtilities.foreach{case (i,row) => row.foreach(e => m.put((i,e._1),e._2))}
+    workers.foreach(w => w.currentUtilities.foreach{case (j,u) => m.put((w.id,j), u)})
+    m.toSeq.groupBy(_._1._1).map{case (i, s) => (i,s.map{case ((_,j),u) => (j,u)}.toMap)}
+  }
 
 
 }

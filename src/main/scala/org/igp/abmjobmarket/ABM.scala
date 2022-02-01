@@ -28,6 +28,8 @@ object ABM {
     "contract" -> discreteDCCoef(-0.258)
   )
 
+  val dcCoefsNames = Seq("salary", "workingHours", "experience", "socialSecurity", "diversity", "insurance", "contract")
+
   def discreteDCCoef(beta: Double): Array[((Double, Double), Double)] = Array(((Double.NaN, Double.NaN),beta))
 
   /**
@@ -37,7 +39,8 @@ object ABM {
    * @return coefs array, in order of Job field names (! productElementNames is ordered: ok)
    */
   def transformDCCoefs(rawCoefs: Map[String, Array[((Double, Double), Double)]], jobs: Seq[Job]): Array[Double] = {
-    val fieldNames = Job.unemployed.productElementNames.toArray
+    //val fieldNames = Job.unemployed.productElementNames.toArray
+    val fieldNames = dcCoefsNames
     val res = fieldNames.map{field =>
       if (rawCoefs(field).head._1._1.isNaN) rawCoefs(field).head._2
       else {
@@ -55,7 +58,7 @@ object ABM {
       }
     }
     //Utils.log(res.mkString(" "))
-    res
+    res.toArray
   }
 
   def setup(parameters: ModelParameters)(implicit rng: Random, runtimeParameters: RuntimeParameters): ModelState = {
@@ -74,12 +77,19 @@ object ABM {
 
     val workers  = Worker.syntheticWorkerPopulationDataSample(runtimeParameters.dataDirectory+workerFileName, updatedDCCoefs)
 
+    val socialNetwork = socialNetworkMode match {
+      case "random" => Worker.randomSocialNetwork(workers)
+      case "proximity" => Worker.proximitySocialNetwork(workers, socialNetworkHierarchy)
+      case _ => Worker.randomSocialNetwork(workers)
+    }
+
     ModelState(
       workers = workers,
       employers = Seq.empty, // no need for employers in the demand-driven only model
       jobs = jobs,
       jobSimilarities = Job.similarities(jobs),
-      socialNetwork = Array.empty[Array[Double]],
+      socialNetwork = socialNetwork,
+      pastUtilities = Worker.initialEmptyUtilities(workers, jobs),
       parameters = parameters
     )
 
@@ -114,17 +124,22 @@ object ABM {
     //val perceivedInformality = Indicators.informality(state) // ! depends on each job
     val perceivedInformalities = Job.perceivedInformalities(
       state,
-      similaritiesTransformation = {w => w.map{_.map{s =>
+      similaritiesTransformation = {w => w.map{ e => (e._1, e._2.map{s =>
         //math.pow((1.0 + s)/2.0, jobSimilarityHierarchy)
-        math.pow(s, jobSimilarityHierarchy)
-      }}}
+        (s._1,math.pow(s._2, jobSimilarityHierarchy))
+      })}}
     )
     //println(s"Perceived informalities = $perceivedInformalities")
 
-    val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformalities)
+    val socialPerception = Worker.perceivedUtilities(state)
+
+    val newlyEmployed = Worker.newJobsChoice(workers, jobSeekingNumber, state.jobs, perceivedInformalities, socialPerception)
+
+    // this could be ignored when social network mechanism is deactivated
+    val newPastUtilities = Worker.updatePastUtilities(newlyEmployed, state.pastUtilities)
 
     // only workers are updated for now
-    state.copy(workers = newlyEmployed)
+    state.copy(workers = newlyEmployed, pastUtilities = newPastUtilities)
   }
 
   /**
