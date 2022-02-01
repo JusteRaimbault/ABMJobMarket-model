@@ -36,7 +36,7 @@ val model = ScalaTask("""
   resources += workDirectory / "data",
   (inputs, outputs) += (workersNumber, jobsNumber, jobSeekingNumber, unemploymentShare, workPermitShare, perceivedInformalityCoef, jobSimilarityHierarchy, socialNetworkCoef, socialNetworkHierarchy, socialNetworkMode, iterations, replication, id),
   outputs += (informality, unemployment),
-  workersNumber := 100, jobsNumber := 200, jobSeekingNumber = 20, iterations := 500
+  workersNumber := 100, jobsNumber := 200, jobSeekingNumber := 20, iterations := 500
 )
 
 //model hook ToStringHook()
@@ -52,8 +52,8 @@ val indics_hook = CSVHook(workDirectory / "exploration" / resfilename,arrayOnRow
 val env = EGIEnvironment("vo.complex-systems.eu")
 
 DirectSampling(
-    evaluation = (model on env hook indics_hook),
-    sampling = (
+    evaluation = (model on env by 30 hook indics_hook),
+    sampling = ((
       (unemploymentShare in Seq(0.25, 0.75))
       x (workPermitShare in Seq(0.25, 0.75))
       x (perceivedInformalityCoef in Seq(-10.0,0.0,10.0))

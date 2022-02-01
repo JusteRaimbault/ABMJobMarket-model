@@ -21,16 +21,16 @@ package object abmjobmarket {
                               workersNumber: Int = 100,
                               jobsNumber: Int = 200,
                               unemploymentShare: Double = 0.25,
+                              jobSeekingNumber: Int = 20,
                               workPermitShare: Double = 0.5,
-                              discreteChoiceParams: Array[Double] = Array.empty[Double],
                               perceivedInformalityCoef: Double = 0.0,
                               jobSimilarityHierarchy: Double = 1.0,
                               socialNetworkCoef: Double = 0.0,
                               socialNetworkHierarchy: Double = 1.0,
                               socialNetworkMode: String = "proximity", // \in {"random", "proximity"}
-                              jobSeekingNumber: Int = 20,
                               iterations: Int = 1000,
-                              seed: Long = 0L
+                              seed: Long = 0L,
+                              discreteChoiceParams: Array[Double] = Array.empty[Double],
                             )
 
   /*
