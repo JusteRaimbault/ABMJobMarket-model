@@ -27,37 +27,37 @@ val model = ScalaTask("""
  |  iterations = input.iterations, seed = input.replication
  |)
  |val result = ABM.runModel(parameters)
- |val informality = math.abs(result.stationaryInformality - 0.364)
- |val unemployment = math.abs(result.stationaryUnemployment - 0.225)
+ |val informalityError = math.abs(result.stationaryInformality - 0.364)
+ |val unemploymentError = math.abs(result.stationaryUnemployment - 0.225)
 """.stripMargin
 ) set (
   plugins += pluginsOf[org.igp.abmjobmarket.ModelParameters],
   resources += workDirectory / "data",
   (inputs, outputs) += (workersNumber, jobsNumber, jobSeekingNumber, unemploymentShare, workPermitShare, perceivedInformalityCoef, jobSimilarityHierarchy, socialNetworkCoef, socialNetworkHierarchy, socialNetworkMode, iterations, replication),
-  outputs += (informality, unemployment),
-  workersNumber := 100, jobsNumber := 200, jobSeekingNumber = 20, iterations := 500
+  outputs += (informalityError, unemploymentError),
+  workersNumber := 100, jobsNumber := 200, jobSeekingNumber := 20, iterations := 500
 )
 
+/*
 val replications = Replication(
     evaluation = model,
     seed = replication,
     sample = 10
-)
+)*/
 
 val purpose = "CALIBRATION"
 
-val datestr = (new SimpleDateFormat("yyyyMMdd_HHmmss")).format(new Date()).toString
+val datestr = (new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")).format(new java.util.Date()).toString
 val resdir = purpose+"_"+datestr
 
 val env = LocalEnvironment(10)
 //val env = EGIEnvironment("vo.complex-systems.eu")
 
 
-val evolution =
-  NSGA2Evolution(
+NSGA2Evolution(
     genome =
       Seq(
-        unemploymentShare in (0.1, 0.9)
+        unemploymentShare in (0.1, 0.9),
         workPermitShare in Seq(0.1, 0.9),
         perceivedInformalityCoef in (-10.0,10.0),
         jobSimilarityHierarchy in Seq (0.0, 5.0),
@@ -65,19 +65,12 @@ val evolution =
         socialNetworkHierarchy in (0.0, 5.0),
         socialNetworkMode in Seq("random","proximity")
       ),
-      mu = 200,
-      objectives = Seq(informalityError,unemploymentError),
-      evaluation = replications,
+      populationSize = 100,
+      objective = Seq(informalityError,unemploymentError),
+      evaluation = model on env,
       stochastic = Stochastic(seed = replication),
       termination = 10000,
       parallelism = 10//1000,
       //distribution = Island(30 minutes)
-)
-
-val savePopulation = SavePopulationHook(evolution, workDirectory / "calibration" / resdir,100)
-
-
-(evolution on env hook savePopulation)
-
-
+) hook (workDirectory / "calibration" / resdir,100)
 
