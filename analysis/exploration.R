@@ -1,5 +1,5 @@
 
-setwd(paste0(Sys.getenv('CS_HOME'),'/UrbanDynamics/Models/ABMJobMarket'))
+setwd(paste0(Sys.getenv('CS_HOME'),'/UrbanDynamics/Models/ABMJobMarket-model'))
 
 library(ggplot2)
 library(dplyr)

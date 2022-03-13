@@ -46,7 +46,17 @@ object Utils {
       a.zip(b).map{case (aa,bb) => aa*bb}.sum
     }
     def norm: Double = math.sqrt(a.map(aa => aa*aa).sum)
+
+    def stationaryAverage: Double = {
+      val values = a.drop(a.length / 2)
+      values.sum / (values.length*1.0)
+    }
   }
+
+  implicit class BooleanDecorator(b: Boolean) {
+    def toDouble: Double = if (b) 1.0 else 0.0
+  }
+
 
   /**
    * Seems much more efficient with equiprobable objects

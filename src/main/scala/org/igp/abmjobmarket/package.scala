@@ -5,6 +5,8 @@ package org.igp
  */
 package object abmjobmarket {
 
+  import Utils._
+
   val DEBUG: Boolean = true
 
   /**
@@ -19,14 +21,16 @@ package object abmjobmarket {
                               workersNumber: Int = 100,
                               jobsNumber: Int = 200,
                               unemploymentShare: Double = 0.25,
-                              workPermitShare: Double = 0.5,
-                              discreteChoiceParams: Array[Double] = Array.empty[Double],
-                              perceivedInformalityCoef: Double = 0.0,
-                              socialNetworkCoef: Double = 0.0,
                               jobSeekingNumber: Int = 20,
+                              workPermitShare: Double = 0.5,
+                              perceivedInformalityCoef: Double = 0.0,
                               jobSimilarityHierarchy: Double = 1.0,
+                              socialNetworkCoef: Double = 0.0,
+                              socialNetworkHierarchy: Double = 1.0,
+                              socialNetworkMode: String = "proximity", // \in {"random", "proximity"}
                               iterations: Int = 1000,
-                              seed: Long = 0L
+                              seed: Long = 0L,
+                              discreteChoiceParams: Array[Double] = Array.empty[Double],
                             )
 
   /*
@@ -51,14 +55,16 @@ package object abmjobmarket {
    * @param employers employers (not used in the current implementation)
    * @param jobs jobs
    * @param jobSimilarities matrix of similarities between jobs (note: with static impl (no employers); no need to store all)
+   * @param pastUtilities utilities for each worker and each job, the last time they were observed (sparse at the beginning)
    * @param parameters parameters
    */
   case class ModelState(
                        workers: Seq[Worker],
                        employers: Seq[Employer],
                        jobs: Seq[Job],
-                       jobSimilarities: Array[Array[Double]],
-                       socialNetwork: Array[Array[Double]],
+                       jobSimilarities: Map[Int, Map[Int, Double]],
+                       socialNetwork: Map[Int, Map[Int, Double]],
+                       pastUtilities: Map[Int, Map[Int, Double]],
                        parameters: ModelParameters
                        )
 
@@ -83,6 +89,11 @@ package object abmjobmarket {
     def delta(result2: ModelResult): Double= {
       informality.zip(result2.informality).map{case(i1,i2) => math.abs(i1-i2)}.sum + unemployment.zip(result2.unemployment).map{case(i1,i2) => math.abs(i1-i2)}.sum
     }
+
+    def stationaryInformality: Double = informality.stationaryAverage
+    def stationaryUnemployment: Double = unemployment.stationaryAverage
+
+    override def toString: String = s"Model result: informality = ${stationaryInformality} ; unemployment = ${stationaryUnemployment}"
   }
 
   object ModelResult {

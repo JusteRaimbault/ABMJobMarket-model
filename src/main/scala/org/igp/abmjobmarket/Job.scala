@@ -5,6 +5,7 @@ import org.igp.abmjobmarket.Utils.ArrayDecorator
 import scala.util.Random
 
 case class Job(
+                id: Int,
                 salary: Double,
                 diversity: Double,
                 workingHours: Double,
@@ -31,7 +32,7 @@ object Job {
   // Seq("salary","dce_diversity","dce_hours","dce_skills","dce_social_security","dce_insurance","dce_contract","choice")
   val jobDataFields: Seq[String] = Seq("dce_salary","dce_diversity","dce_hours","dce_skills","dce_social_security","dce_insurance","dce_contract","choice")
 
-  val unemployed: Job = Job(0.0,0.0,0.0,0.0,0.0,0.0,0.0)
+  val unemployed: Job = Job(-1,0.0,0.0,0.0,0.0,0.0,0.0,0.0)
 
   /**
    * Variables: dce_salary (! normalisation: chge dce coef), dce_diversity, dce_hours, dce_skills, dce_social_security, dce_insurance, dce_contract
@@ -43,32 +44,34 @@ object Job {
    */
   def apply(raw: Seq[String])(implicit rng: Random): Job = {
 
+    val id = raw.head.toInt
+
     //val salary = raw.head match {case "less than 450,000" => rng.between(100000.0,450000.0); case "450,000 to 999,999" => rng.between(450000.0, 999999.0) ; case "1,000,000 to 1,999,999" => rng.between(1000000.0, 1999999.0) ; case "2,000,000 to 3,500,000" => rng.between(2000000.0, 3500000.0) ; case "More than 3,500,000" => rng.between(3500000.0, 5000000.0); case _ => rng.between(100000.0,3500000.0) }
-    val salary = raw.head match {case "0" => rng.between(100000.0,450000.0); case "1" => rng.between(450000.0, 999999.0) ; case "2" => rng.between(1000000.0, 1999999.0) ; case "3" => rng.between(2000000.0, 3500000.0) ; case "4" => rng.between(3500000.0, 5000000.0); case _ => rng.between(100000.0,3500000.0) }
+    val salary = raw(1) match {case "0" => rng.between(100000.0,450000.0); case "1" => rng.between(450000.0, 999999.0) ; case "2" => rng.between(1000000.0, 1999999.0) ; case "3" => rng.between(2000000.0, 3500000.0) ; case "4" => rng.between(3500000.0, 5000000.0); case _ => rng.between(100000.0,3500000.0) }
 
     //val diversity = raw(1) match {case "No diversity in the workplace" => 0.0 ; case "Some diversity in the workplace" => 0.5 ; case "A lot of diversity in the workplace" => 1.0; case _ => 0.0}
     // data on 20220128: coded with 0, 1, 2
-    val diversity = raw(1) match {case s => s.toDouble}
+    val diversity = raw(2) match {case s => s.toDouble}
 
     //val workingHours = raw(2) match {case "Part time (less than 7hrs/day)" => 0.5; case "0" => 1.0; case _ => 0.0}
     // working hours: recoded as binary: > 48h
-    val workingHours = raw(2) match {case s => s.toDouble}
+    val workingHours = raw(3) match {case s => s.toDouble}
 
     //val experience = raw(3) match {case "My skills and experience are required in this job" => 1.0; case _ => 0.0}
-    val experience = raw(3) match {case s => s.toDouble}
+    val experience = raw(4) match {case s => s.toDouble}
 
     //val security = raw(4) match {case "Social Security" => 1.0; case _ => 0.0}
-    val security = raw(4) match {case s => s.toDouble}
+    val security = raw(5) match {case s => s.toDouble}
 
     //val insurance = raw(5) match {case "Private insurance" => 1.0; case _ => 0.0}
-    val insurance = raw(5) match {case s => s.toDouble}
+    val insurance = raw(6) match {case s => s.toDouble}
 
     //val contract = raw(6) match {case "Contract" => 1.0; case _ => 0.0}
-    val contract = raw(6) match {case s => s.toDouble}
+    val contract = raw(7) match {case s => s.toDouble}
 
     // do not normalise here -> when computing DC coefs - use average of jobs at t0
     //Job(salary / 3500000.0, diversity, workingHours, experience, security, insurance, contract)
-    Job(salary, diversity, workingHours, experience, security, insurance, contract)
+    Job(id, salary, diversity, workingHours, experience, security, insurance, contract)
   }
 
   /**
@@ -86,7 +89,7 @@ object Job {
                                        size: Int
                                        //weightVariable: String // not needed: weight assumed as last column
                                      )(implicit rng: Random): Seq[Job] = {
-    val rawData = Utils.readCSV(file, jobDataFields)
+    val rawData = Utils.readCSV(file, jobDataFields, withId = true)
     val weights = rawData.map(_.last.toDouble)
     val jobPool: Seq[Seq[String]] = rawData.zip(weights).flatMap{case (r,w) => Seq.fill((100*w).toInt)(r)}
     (1 to size).map(_ => Job(jobPool(rng.nextInt(jobPool.length))))
@@ -97,17 +100,24 @@ object Job {
    * Compute mean field perceived informality for each job, given a distance matrix between jobs
    *  (not recomputed at each step when jobs are fixed)
    *  Note: as function to transform similarities may change in time, transfo recomputed - this may be improved in simplest case
+   *
+   *  ! using jobSimilarities as a Matrix consistent with jobs seq works because jobs are not changed in model state
+   *    -> update for future robustness
    * @param state model state
    * @return
    */
-  def perceivedInformalities(state: ModelState, similaritiesTransformation: Array[Array[Double]] => Array[Array[Double]] = {w => w}): Seq[Double] = {
-    val informalities = state.jobs.map(_.contract).toArray
+  def perceivedInformalities(
+                              state: ModelState,
+                              similaritiesTransformation: Map[Int, Map[Int, Double]] => Map[Int, Map[Int, Double]] = {w => w}
+                            ): Map[Int,Double] = {
+    val informalities = state.jobs.map(j => (j.id,j.contract))
     val w = similaritiesTransformation(state.jobSimilarities)
     //println(w.flatten.sum)
     //println(w(0).toSeq)
-    w.map{weights =>
-      weights.dot(informalities) / weights.sum
-    }
+    state.jobs.map{j =>
+      val weights = w(j.id)
+      (j.id,informalities.map{case (id, inf) => weights(id)*inf}.sum / weights.values.sum)
+    }.toMap
   }
 
   /**
@@ -115,7 +125,7 @@ object Job {
    * @param jobs jobs
    * @return
    */
-  def similarities(jobs: Seq[Job]): Array[Array[Double]] = {
+  def similarities(jobs: Seq[Job]): Map[Int, Map[Int, Double]] = {
     val mins = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.min)
     val maxs = jobs.toArray.map(_.discreteChoiceVariables).transpose.map(_.max)
     //println(mins.toSeq)
@@ -123,17 +133,20 @@ object Job {
     val res = jobs.toArray.map { j1 =>
       val x1 = j1.discreteChoiceVariables.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
       val n1 = x1.norm
-      jobs.toArray.map { j2 =>
+      (j1.id,
+        jobs.toArray.map { j2 =>
         val x2 = j2.discreteChoiceVariables.zip(mins.zip(maxs)).map{case (x,(mi,ma)) => (x - mi)/ (ma - mi)}
         val n2 = x2.norm
-        if (n1==0.0&&n2==0.0) 1.0 else {
+        val s = if (n1==0.0&&n2==0.0) 1.0 else {
           if (n1==0.0 || n2==0.0) 0.0 else x1.dot(x2) / (n1*n2)
         }
-      }
+        (j2.id, s)
+      }.toMap
+      )
     }
     //println(res.toSeq.map(_.sum))
     //println(res(0).toSeq)
-    res
+    res.toSeq.toMap // does toMap from array behaves correctly?
   }
 
 

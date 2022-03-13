@@ -1,0 +1,76 @@
+
+val workersNumber = Val[Int]
+val jobsNumber = Val[Int]
+val jobSeekingNumber = Val[Int]
+val unemploymentShare = Val[Double]
+val workPermitShare = Val[Double]
+val perceivedInformalityCoef = Val[Double]
+val jobSimilarityHierarchy = Val[Double]
+val socialNetworkCoef = Val[Double]
+val socialNetworkHierarchy = Val[Double]
+val socialNetworkMode = Val[String]
+val iterations = Val[Int]
+// discrete choice params array can be changed as a parameter - e.g. to study the influence of perturbations
+
+val replication = Val[Long]
+
+val informalityError = Val[Double]
+val unemploymentError = Val[Double]
+
+val model = ScalaTask("""
+ |import org.igp.abmjobmarket._
+ |implicit val runtimeParameters: RuntimeParameters = RuntimeParameters(dataDirectory = (workDirectory / "data").toString+"/")
+ |val parameters = ModelParameters(
+ |  workersNumber = input.workersNumber, jobsNumber = input.jobsNumber, jobSeekingNumber = input.jobSeekingNumber, unemploymentShare = input.unemploymentShare,
+ |  workPermitShare = input.workPermitShare, perceivedInformalityCoef = input.perceivedInformalityCoef, jobSimilarityHierarchy = input.jobSimilarityHierarchy,
+ |  socialNetworkCoef = input.socialNetworkCoef, socialNetworkHierarchy = input.socialNetworkHierarchy, socialNetworkMode = input.socialNetworkMode, 
+ |  iterations = input.iterations, seed = input.replication
+ |)
+ |val result = ABM.runModel(parameters)
+ |val informalityError = math.abs(result.stationaryInformality - 0.364)
+ |val unemploymentError = math.abs(result.stationaryUnemployment - 0.225)
+""".stripMargin
+) set (
+  plugins += pluginsOf[org.igp.abmjobmarket.ModelParameters],
+  resources += workDirectory / "data",
+  (inputs, outputs) += (workersNumber, jobsNumber, jobSeekingNumber, unemploymentShare, workPermitShare, perceivedInformalityCoef, jobSimilarityHierarchy, socialNetworkCoef, socialNetworkHierarchy, socialNetworkMode, iterations, replication),
+  outputs += (informalityError, unemploymentError),
+  workersNumber := 100, jobsNumber := 200, jobSeekingNumber := 20, iterations := 500
+)
+
+/*
+val replications = Replication(
+    evaluation = model,
+    seed = replication,
+    sample = 10
+)*/
+
+val purpose = "CALIBRATION"
+
+val datestr = (new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")).format(new java.util.Date()).toString
+val resdir = purpose+"_"+datestr
+
+val env = LocalEnvironment(10)
+//val env = EGIEnvironment("vo.complex-systems.eu")
+
+
+NSGA2Evolution(
+    genome =
+      Seq(
+        unemploymentShare in (0.1, 0.9),
+        workPermitShare in Seq(0.1, 0.9),
+        perceivedInformalityCoef in (-10.0,10.0),
+        jobSimilarityHierarchy in Seq (0.0, 5.0),
+        socialNetworkCoef in (-10.0,10.0),
+        socialNetworkHierarchy in (0.0, 5.0),
+        socialNetworkMode in Seq("random","proximity")
+      ),
+      populationSize = 100,
+      objective = Seq(informalityError,unemploymentError),
+      evaluation = model on env,
+      stochastic = Stochastic(seed = replication),
+      termination = 10000,
+      parallelism = 10//1000,
+      //distribution = Island(30 minutes)
+) hook (workDirectory / "calibration" / resdir,100)
+

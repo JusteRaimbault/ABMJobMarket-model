@@ -1,0 +1,67 @@
+
+val workersNumber = Val[Int]
+val jobsNumber = Val[Int]
+val jobSeekingNumber = Val[Int]
+val unemploymentShare = Val[Double]
+val workPermitShare = Val[Double]
+val perceivedInformalityCoef = Val[Double]
+val jobSimilarityHierarchy = Val[Double]
+val socialNetworkCoef = Val[Double]
+val socialNetworkHierarchy = Val[Double]
+val socialNetworkMode = Val[String]
+val iterations = Val[Int]
+// discrete choice params array can be changed as a parameter - e.g. to study the influence of perturbations
+
+val id = Val[Int]
+val replication = Val[Long]
+
+val informality = Val[Double]
+val unemployment = Val[Double]
+
+val model = ScalaTask("""
+ |import org.igp.abmjobmarket._
+ |implicit val runtimeParameters: RuntimeParameters = RuntimeParameters(dataDirectory = (workDirectory / "data").toString+"/")
+ |val parameters = ModelParameters(
+ |  workersNumber = input.workersNumber, jobsNumber = input.jobsNumber, jobSeekingNumber = input.jobSeekingNumber, unemploymentShare = input.unemploymentShare,
+ |  workPermitShare = input.workPermitShare, perceivedInformalityCoef = input.perceivedInformalityCoef, jobSimilarityHierarchy = input.jobSimilarityHierarchy,
+ |  socialNetworkCoef = input.socialNetworkCoef, socialNetworkHierarchy = input.socialNetworkHierarchy, socialNetworkMode = input.socialNetworkMode, 
+ |  iterations = input.iterations, seed = input.replication
+ |)
+ |val result = ABM.runModel(parameters)
+ |val informality = result.stationaryInformality
+ |val unemployment = result.stationaryUnemployment
+""".stripMargin
+) set (
+  plugins += pluginsOf[org.igp.abmjobmarket.ModelParameters],
+  resources += workDirectory / "data",
+  (inputs, outputs) += (workersNumber, jobsNumber, jobSeekingNumber, unemploymentShare, workPermitShare, perceivedInformalityCoef, jobSimilarityHierarchy, socialNetworkCoef, socialNetworkHierarchy, socialNetworkMode, iterations, replication, id),
+  outputs += (informality, unemployment),
+  workersNumber := 100, jobsNumber := 200, jobSeekingNumber := 20, iterations := 500
+)
+
+//model hook ToStringHook()
+
+//val purpose = "EXPLORATION_REPLICATIONS"
+val purpose = "STOCHASTICITY"
+//val purpose = "TEST"
+
+val resfilename = ((new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")).format(new java.util.Date()))+"_"+purpose+".csv"
+val indics_hook = CSVHook(workDirectory / "exploration" / resfilename,arrayOnRow=true)
+
+//val env = LocalEnvironment(10)
+val env = EGIEnvironment("vo.complex-systems.eu")
+
+DirectSampling(
+    evaluation = (model on env by 30 hook indics_hook),
+    sampling = ((
+      (unemploymentShare in Seq(0.25, 0.75))
+      x (workPermitShare in Seq(0.25, 0.75))
+      x (perceivedInformalityCoef in Seq(-10.0,0.0,10.0))
+      x (jobSimilarityHierarchy in Seq (1.0, 5.0))
+      x (socialNetworkCoef is 0.0)
+      x (socialNetworkHierarchy is 1.0)
+      x (socialNetworkMode is "random")
+      )
+     withIndex id ) x (replication in UniformDistribution[Long]() take 1000)
+)
+
