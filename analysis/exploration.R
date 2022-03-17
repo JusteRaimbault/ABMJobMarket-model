@@ -110,6 +110,7 @@ for(param in params[-8]){
 res$socialNetworkMode = ifelse(res$socialNetworkMode<0.5,"proximity","random")
 
 for(socialNetworkMode in unique(res$socialNetworkMode)){
+  show(socialNetworkMode)
   for(workPermitShare in unique(res$workPermitShareFactor)){
     for(jobSeekingNumber in unique(res$jobSeekingNumberFactor)){
       for(unemploymentShare in unique(res$unemploymentShareFactor)){
@@ -122,6 +123,14 @@ for(socialNetworkMode in unique(res$socialNetworkMode)){
                            "_unemploymentShare",unemploymentShare,".png"),
                width=30,height=20,units="cm"
                )
+        
+        g=ggplot(d,aes(x=perceivedInformalityCoef,y=unemployment,color=socialNetworkCoefFactor,group=socialNetworkCoefFactor))
+        g+geom_point(pch='.')+geom_smooth(span=0.3)+facet_grid(jobSimilarityHierarchyFactor~socialNetworkHierarchyFactor,scales="free")+stdtheme
+        ggsave(file=paste0(resdir,"unemployment-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                           socialNetworkMode,"_workPermitShare",workPermitShare,"_jobSeekingNumber",jobSeekingNumber,
+                           "_unemploymentShare",unemploymentShare,".png"),
+               width=30,height=20,units="cm"
+        )
         } 
     }
   }
