@@ -1,0 +1,13 @@
+
+
+16/03/2022 18:23:41 ; running 30 ; 329901/329951 ; 16:17:46
+
+model: ready 20, running 30, completed 109950; total 110000 [Q: why stalled/20 waiting? on dirac: job killed stalled 11700sec (?) -> pb gridscale when killed/stalled?] -> iss
+ue
+
+EGIEnvironment 1m5d0h ; up 44.68M ; down 465.28M ; running 6 ; finished 3665; failed 43
+; errors 200 [failed to get the result for the job]
+
+
+=> stop, delete
+

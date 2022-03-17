@@ -91,5 +91,47 @@ summary(reldistance("medianunemployment","sdunemployment"))
 
 
 
+#######
+# LHS sampling (for GSA)
+
+indics = c("informality","unemployment")
+params = c("jobSeekingNumber","unemploymentShare","workPermitShare",
+             "perceivedInformalityCoef","jobSimilarityHierarchy","socialNetworkCoef",
+           "socialNetworkHierarchy", "socialNetworkMode")
+
+resprefix = '20220316_172344_GSA'
+
+res <- read_csv(paste0('openmole/gsa/',resprefix,'.csv'))
+resdir <- paste0('analysis/results/',resprefix,'/');dir.create(resdir,recursive = T)
+
+for(param in params[-8]){
+  res[[paste0(param,"Factor")]] = as.character(cut(res[[param]],2))
+}
+res$socialNetworkMode = ifelse(res$socialNetworkMode<0.5,"proximity","random")
+
+for(socialNetworkMode in unique(res$socialNetworkMode)){
+  for(workPermitShare in unique(res$workPermitShareFactor)){
+    for(jobSeekingNumber in unique(res$jobSeekingNumberFactor)){
+      for(unemploymentShare in unique(res$unemploymentShareFactor)){
+        d = res[res$socialNetworkMode==socialNetworkMode&res$workPermitShareFactor==workPermitShare&
+                  res$jobSeekingNumberFactor==jobSeekingNumber&res$unemploymentShareFactor==unemploymentShare,]
+        g=ggplot(d,aes(x=perceivedInformalityCoef,y=informality,color=socialNetworkCoefFactor,group=socialNetworkCoefFactor))
+        g+geom_point(pch='.')+geom_smooth(span=0.3)+facet_grid(jobSimilarityHierarchyFactor~socialNetworkHierarchyFactor,scales="free")+stdtheme
+        ggsave(file=paste0(resdir,"informality-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                           socialNetworkMode,"_workPermitShare",workPermitShare,"_jobSeekingNumber",jobSeekingNumber,
+                           "_unemploymentShare",unemploymentShare,".png"),
+               width=30,height=20,units="cm"
+               )
+        } 
+    }
+  }
+}
+
+
+
+
+
+
+
 
 
