@@ -138,9 +138,53 @@ for(socialNetworkMode in unique(res$socialNetworkMode)){
 
 
 
+########
+# Grid sampling
 
+resprefix = '20220318_150523_EXPLORATION'
 
+res <- read_csv(paste0('openmole/exploration/',resprefix,'.csv'))
+resdir <- paste0('analysis/results/',resprefix,'/');dir.create(resdir,recursive = T)
 
+g=ggplot(res,aes(x=perceivedInformalityCoef,y=informality,color=socialNetworkCoef,group=socialNetworkCoef))
+g+geom_point(pch='.')+geom_smooth()+facet_grid(jobSimilarityHierarchy~socialNetworkHierarchy,scales="free")+stdtheme
+ggsave(file=paste0(resdir,"informality-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+    "proximity_workPermitShare0-5_jobSeekingNumber10_unemploymentShare0-5.png"),
+               width=30,height=20,units="cm"
+)
+        
+g=ggplot(res,aes(x=perceivedInformalityCoef,y=unemployment,color=socialNetworkCoef,group=socialNetworkCoef))
+g+geom_point(pch='.')+geom_smooth()+facet_grid(jobSimilarityHierarchy~socialNetworkHierarchy,scales="free")+stdtheme
+ggsave(file=paste0(resdir,"unemployment-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                   "proximity_workPermitShare0-5_jobSeekingNumber10_unemploymentShare0-5.png"),
+               width=30,height=20,units="cm"
+)
+
+# summary plots
+sres <- res %>% group_by(id) %>% summarise(sdInformality=sd(informality),medInformality = median(informality),informality=mean(informality),
+                                           sdUnemployment=sd(unemployment),medUnemployment=median(unemployment),unemployment=mean(unemployment),
+                                           perceivedInformalityCoef=mean(perceivedInformalityCoef),socialNetworkCoef=mean(socialNetworkCoef),
+                                           jobSimilarityHierarchy=mean(jobSimilarityHierarchy),socialNetworkHierarchy=mean(socialNetworkHierarchy))
+
+g=ggplot(sres,aes(x=perceivedInformalityCoef,y=informality,color=socialNetworkCoef,group=socialNetworkCoef))
+g+geom_line()+geom_point()+geom_errorbar(aes(ymin=informality-sdInformality,ymax=informality+sdInformality))+facet_grid(jobSimilarityHierarchy~socialNetworkHierarchy,scales="free")+stdtheme
+ggsave(file=paste0(resdir,"informality-perceivedInformalityCoef-sdErrBars_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                   "proximity_workPermitShare0-5_jobSeekingNumber10_unemploymentShare0-5.png"),
+       width=30,height=20,units="cm"
+)
+
+g+geom_line()+facet_grid(jobSimilarityHierarchy~socialNetworkHierarchy,scales="free")+stdtheme
+ggsave(file=paste0(resdir,"informality-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                   "proximity_workPermitShare0-5_jobSeekingNumber10_unemploymentShare0-5.png"),
+       width=30,height=20,units="cm"
+)
+
+g+geom_line(aes(x=perceivedInformalityCoef,y=medInformality,color=socialNetworkCoef,group=socialNetworkCoef))+facet_grid(jobSimilarityHierarchy~socialNetworkHierarchy,scales="free")+
+  ylab("Informality")+xlab(expression(beta[f]))+scale_colour_continuous(name=expression(beta[p]))+stdtheme
+ggsave(file=paste0(resdir,"informalityMedian-perceivedInformalityCoef_color-socialNetworkCoef_facet-jobSimilarityHierarchy-socialNetworkHierarchy_socialNetworkMode",
+                   "proximity_workPermitShare0-5_jobSeekingNumber10_unemploymentShare0-5.png"),
+       width=30,height=20,units="cm"
+)
 
 
 
