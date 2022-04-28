@@ -4,11 +4,15 @@ library(ggplot2)
 library(dplyr)
 source(paste0(Sys.getenv('CS_HOME'),'/Organisation/Models/Utils/R/plots.R'))
 
-#resprefix='CALIBRATION_20220201_161055'; generation='9800';
-resprefix='CALIBRATION_20220207_150221'; generation='21000'
+resprefix='CALIBRATION_20220201_161055'; generation='9800';
+#resprefix='CALIBRATION_20220207_150221'; generation='21000'
 dir.create(paste0('analysis/results/',resprefix))
 
 res <- as_tibble(read.csv(paste0('openmole/calibration/',resprefix,'/population',generation,'.csv'),stringsAsFactors = F))
+
+resm = res[res$unemploymentError<0.01&res$informalityError<0.01,]
+mean(resm$socialNetworkCoef); sd(resm$socialNetworkCoef)
+mean(resm$perceivedInformalityCoef); sd(resm$perceivedInformalityCoef)
 
 resf = res[res$objective.unemploymentError<0.1&res$objective.informalityError<0.1&res$evolution.samples>=20,]
 
@@ -28,6 +32,9 @@ ggsave(
   file=paste0('analysis/results/',resprefix,'/pareto-unemploymentError-informalityError_color-socialNetworkCoef_size-perceivedInformalityCoef.png'),
   width=27,height=20,units='cm' 
 )
+
+# values of coeff parameters for smallest 
+summary(resf[resf$objective.unemploymentError<0.01&resf$objective.informalityError<0.01,])
 
 
 ## regressions to link params to errors
